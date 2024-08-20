@@ -6,11 +6,42 @@ const router = express.Router();
 
 // Route to create a new quiz
 router.post("/create", authMiddleware, async (req, res) => {
-  const { title, questions, quizType } = req.body;
+  const { title, questions, quizStructure, quizCategory } = req.body;
 
   // Validate input
-  if (!title || !questions || !quizType) {
-    return res.status(400).json({ message: "All fields are required" });
+  if (!title) {
+    return res.status(400).json({ message: "Title is required" });
+  }
+  if (!questions || questions.length === 0) {
+    return res
+      .status(400)
+      .json({ message: "At least one question is required" });
+  }
+  if (!quizStructure) {
+    return res.status(400).json({ message: "Quiz structure is required" });
+  }
+  if (!quizCategory) {
+    return res.status(400).json({ message: "Quiz category is required" });
+  }
+
+  // Validate quizStructure
+  const validQuizStructures = ["Single Question", "Multiple Questions"];
+  if (!validQuizStructures.includes(quizStructure)) {
+    return res.status(400).json({
+      message: `Invalid quiz structure. Must be one of: ${validQuizStructures.join(
+        ", "
+      )}`,
+    });
+  }
+
+  // Validate quizCategory
+  const validQuizCategories = ["Q&A", "Poll"];
+  if (!validQuizCategories.includes(quizCategory)) {
+    return res.status(400).json({
+      message: `Invalid quiz category. Must be one of: ${validQuizCategories.join(
+        ", "
+      )}`,
+    });
   }
 
   try {
@@ -28,6 +59,8 @@ router.post("/create", authMiddleware, async (req, res) => {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
+
+module.exports = router;
 
 // Route to get all quizzes created by the logged-in user
 router.get("/my-quizzes", authMiddleware, async (req, res) => {
