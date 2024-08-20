@@ -1,12 +1,22 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
+const cors = require("cors");
+
+// Importing routes
+const authRoutes = require("./routes/auth");
+const quizRoutes = require("./routes/quiz");
 
 dotenv.config();
 
 const app = express();
 
-app.use(express.json());
+app.use(cors()); 
+app.use(express.json()); 
+
+// API routes
+app.use("/api/auth", authRoutes);
+app.use("/api/quizzes", quizRoutes); 
 
 // MongoDB connection
 mongoose
