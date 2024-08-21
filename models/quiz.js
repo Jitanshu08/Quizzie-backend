@@ -2,21 +2,40 @@ const mongoose = require("mongoose");
 
 // Defining the schema for a question
 const questionSchema = new mongoose.Schema({
-  text: { type: String, required: true },
-  options: [{ type: String, required: true }],
+  type: {
+    type: String,
+    enum: ["Q&A", "Poll"], // Assuming the type should be one of these values
+    required: true,
+  },
+  text: {
+    type: String,
+    required: true,
+  },
+  options: [
+    {
+      type: String,
+      required: function () {
+        return this.type === "Poll";
+      }, // Options are required only for Poll type
+    },
+  ],
   correctOption: {
     type: Number,
     required: function () {
-      return this.quizType === "Q&A";
+      return this.type === "Q&A";
     },
   },
-  timer: { type: Number }, // Timer in seconds, optional
-  type: { type: String, enum: ["Q&A", "Poll"], required: true },
+  timer: {
+    type: Number, // Timer in seconds, optional
+  },
 });
 
 // Defining the schema for a quiz
 const quizSchema = new mongoose.Schema({
-  title: { type: String, required: true },
+  title: {
+    type: String,
+    required: true,
+  },
   creator: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
@@ -31,10 +50,23 @@ const quizSchema = new mongoose.Schema({
     enum: ["Single Question", "Multiple Questions"],
     required: true,
   },
-  quizCategory: { type: String, enum: ["Q&A", "Poll"], required: true },
-  impressions: { type: Number, default: 0 },
-  isTrending: { type: Boolean, default: false },
-  createdAt: { type: Date, default: Date.now },
+  quizCategory: {
+    type: String,
+    enum: ["Q&A", "Poll"],
+    required: true,
+  },
+  impressions: {
+    type: Number,
+    default: 0,
+  },
+  isTrending: {
+    type: Boolean,
+    default: false,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
 // Custom validation function to limit the number of questions to 5
