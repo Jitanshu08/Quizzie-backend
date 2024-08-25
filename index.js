@@ -3,7 +3,6 @@ const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const cors = require("cors");
 
-// Importing routes
 const authRoutes = require("./routes/auth");
 const quizRoutes = require("./routes/quiz");
 
@@ -11,12 +10,11 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors()); 
-app.use(express.json()); 
+app.use(cors());
+app.use(express.json());
 
-// API routes
 app.use("/api/auth", authRoutes);
-app.use("/api/quizzes", quizRoutes); 
+app.use("/api/quizzes", quizRoutes);
 
 // MongoDB connection
 mongoose
@@ -27,12 +25,10 @@ mongoose
   .then(() => console.log("Connected to MongoDB"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
-// Basic route to test if the server is running
 app.get("/", (req, res) => {
   res.send("Quiz Builder API is running");
 });
 
-// Start the server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

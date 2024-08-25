@@ -4,6 +4,45 @@ const Quiz = require("../models/quiz");
 const authMiddleware = require("../middleware/auth");
 const router = express.Router();
 
+// Route to get dashboard data
+router.get("/dashboard-data", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Fetch the total number of quizzes created by the logged-in user
+    const totalQuizzes = await Quiz.countDocuments({ creator: userId });
+
+    // Fetch the total number of questions created by the logged-in user
+    const userQuizzes = await Quiz.find({ creator: userId });
+    const totalQuestions = userQuizzes.reduce(
+      (acc, quiz) => acc + quiz.questions.length,
+      0
+    );
+
+    // Fetch the total number of impressions on the user's quizzes
+    const totalImpressions = userQuizzes.reduce(
+      (acc, quiz) => acc + quiz.impressions,
+      0
+    );
+
+    // Fetch the trending quizzes (impressions > 10)
+    const trendingQuizzes = await Quiz.find({
+      isTrending: true,
+      creator: userId,
+    });
+
+    // Return the data
+    res.status(200).json({
+      totalQuizzes,
+      totalQuestions,
+      totalImpressions,
+      trendingQuizzes,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
 // Route to create a new quiz
 router.post("/create", authMiddleware, async (req, res) => {
   const { title, questions, quizStructure, quizCategory } = req.body;
@@ -59,8 +98,6 @@ router.post("/create", authMiddleware, async (req, res) => {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
-
-module.exports = router;
 
 // Route to get all quizzes created by the logged-in user
 router.get("/my-quizzes", authMiddleware, async (req, res) => {
