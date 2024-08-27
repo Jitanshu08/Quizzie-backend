@@ -128,6 +128,28 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// routes/quiz.js
+router.put("/:id", authMiddleware, async (req, res) => {
+  try {
+    const quizId = req.params.id;
+    const updatedData = req.body;
+
+    // Find and update the quiz
+    const updatedQuiz = await Quiz.findByIdAndUpdate(quizId, updatedData, {
+      new: true,
+    });
+
+    if (!updatedQuiz) {
+      return res.status(404).json({ message: "Quiz not found" });
+    }
+
+    res.status(200).json(updatedQuiz);
+  } catch (err) {
+    console.error("Error updating quiz:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
 // Route to share a quiz (generate a link)
 router.get("/share/:id", authMiddleware, async (req, res) => {
   try {
@@ -182,7 +204,7 @@ router.delete("/:id", authMiddleware, async (req, res) => {
 router.post("/response/:quizId", async (req, res) => {
   try {
     const { quizId } = req.params;
-    const { answers } = req.body; // Expecting an array of answers
+    const { answers } = req.body;
 
     const response = new Response({
       quiz: quizId,
@@ -233,7 +255,6 @@ router.get("/analysis/:quizId", authMiddleware, async (req, res) => {
         "answers.question": question._id,
       });
 
-      // Total number of people who attempted this question
       analysis.attempted = responses.length;
 
       if (quiz.quizCategory === "Q&A") {

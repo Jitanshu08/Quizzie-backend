@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 const questionSchema = new mongoose.Schema({
   type: {
     type: String,
-    enum: ["Q&A", "Poll"], // Assuming the type should be one of these values
+    enum: ["Q&A", "Poll"],
     required: true,
   },
   text: {
@@ -26,7 +26,7 @@ const questionSchema = new mongoose.Schema({
     },
   },
   timer: {
-    type: Number, // Timer in seconds, optional
+    type: Number,
   },
 });
 
