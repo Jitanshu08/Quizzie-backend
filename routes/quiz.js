@@ -1,6 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const Quiz = require("../models/quiz");
+const Response = require("../models/response"); // Import the Response model
 const authMiddleware = require("../middleware/auth");
 const router = express.Router();
 
@@ -147,6 +148,127 @@ router.get("/share/:id", authMiddleware, async (req, res) => {
     }`;
     res.status(200).json({ link: shareableLink });
   } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+// Route to delete a quiz by ID
+router.delete("/:id", authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const quiz = await Quiz.findById(id);
+
+    if (!quiz) {
+      return res.status(404).json({ message: "Quiz not found" });
+    }
+
+    // Check if the logged-in user is the creator of the quiz
+    if (quiz.creator.toString() !== req.user.id) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to delete this quiz" });
+    }
+
+    await Quiz.findByIdAndDelete(id);
+    res.status(200).json({ message: "Quiz deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting quiz:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+// Route to save a user's response to a quiz
+// Route to submit a response for a quiz
+router.post("/response/:quizId", async (req, res) => {
+  try {
+    const { quizId } = req.params;
+    const { answers } = req.body; // Expecting an array of answers
+
+    const response = new Response({
+      quiz: quizId,
+      answers: answers.map((answer) => ({
+        question: answer.question,
+        selectedOption: answer.selectedOption,
+      })),
+    });
+
+    // If the user is authenticated, add the user ID to the response
+    if (req.user && req.user.id) {
+      response.user = req.user.id;
+    }
+
+    const savedResponse = await response.save();
+    res.status(201).json(savedResponse);
+  } catch (err) {
+    console.error("Error submitting response:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+// Route to get question-wise analysis for a quiz
+router.get("/analysis/:quizId", authMiddleware, async (req, res) => {
+  try {
+    const { quizId } = req.params;
+    const quiz = await Quiz.findById(quizId);
+
+    if (!quiz) {
+      return res.status(404).json({ message: "Quiz not found" });
+    }
+
+    let analysisData = [];
+
+    for (let i = 0; i < quiz.questions.length; i++) {
+      let question = quiz.questions[i];
+      let analysis = {
+        question: question.text,
+        attempted: 0,
+        correct: 0,
+        incorrect: 0,
+        options: [], // For poll type quizzes
+      };
+
+      // Fetch all responses for this question
+      let responses = await Response.find({
+        quiz: quizId,
+        "answers.question": question._id,
+      });
+
+      // Total number of people who attempted this question
+      analysis.attempted = responses.length;
+
+      if (quiz.quizCategory === "Q&A") {
+        // For Q&A type quizzes
+        responses.forEach((response) => {
+          const answer = response.answers.find(
+            (a) => a.question.toString() === question._id.toString()
+          );
+          if (answer) {
+            if (answer.selectedOption === question.correctOption) {
+              analysis.correct++;
+            } else {
+              analysis.incorrect++;
+            }
+          }
+        });
+      } else if (quiz.quizCategory === "Poll") {
+        // For Poll type quizzes
+        question.options.forEach((option, index) => {
+          let count = responses.filter((response) => {
+            const answer = response.answers.find(
+              (a) => a.question.toString() === question._id.toString()
+            );
+            return answer && answer.selectedOption === index;
+          }).length;
+          analysis.options.push({ option, count });
+        });
+      }
+
+      analysisData.push(analysis);
+    }
+
+    res.status(200).json(analysisData);
+  } catch (err) {
+    console.error("Error fetching analysis data:", err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
