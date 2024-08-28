@@ -5,34 +5,28 @@ const Response = require("../models/response");
 const authMiddleware = require("../middleware/auth");
 const router = express.Router();
 
+const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173"; // Use the frontend URL
+
 // Route to get dashboard data
 router.get("/dashboard-data", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // Fetch the total number of quizzes created by the logged-in user
     const totalQuizzes = await Quiz.countDocuments({ creator: userId });
-
-    // Fetch the total number of questions created by the logged-in user
     const userQuizzes = await Quiz.find({ creator: userId });
     const totalQuestions = userQuizzes.reduce(
       (acc, quiz) => acc + quiz.questions.length,
       0
     );
-
-    // Fetch the total number of impressions on the user's quizzes
     const totalImpressions = userQuizzes.reduce(
       (acc, quiz) => acc + quiz.impressions,
       0
     );
-
-    // Fetch the trending quizzes (impressions > 10)
     const trendingQuizzes = await Quiz.find({
       isTrending: true,
       creator: userId,
     });
 
-    // Return the data
     res.status(200).json({
       totalQuizzes,
       totalQuestions,
@@ -48,7 +42,6 @@ router.get("/dashboard-data", authMiddleware, async (req, res) => {
 router.post("/create", authMiddleware, async (req, res) => {
   const { title, questions, quizStructure, quizCategory } = req.body;
 
-  // Validate input
   if (!title) {
     return res.status(400).json({ message: "Title is required" });
   }
@@ -64,7 +57,6 @@ router.post("/create", authMiddleware, async (req, res) => {
     return res.status(400).json({ message: "Quiz category is required" });
   }
 
-  // Validate quizStructure
   const validQuizStructures = ["Single Question", "Multiple Questions"];
   if (!validQuizStructures.includes(quizStructure)) {
     return res.status(400).json({
@@ -74,7 +66,6 @@ router.post("/create", authMiddleware, async (req, res) => {
     });
   }
 
-  // Validate quizCategory
   const validQuizCategories = ["Q&A", "Poll"];
   if (!validQuizCategories.includes(quizCategory)) {
     return res.status(400).json({
@@ -130,7 +121,6 @@ router.put("/:id", authMiddleware, async (req, res) => {
     const quizId = req.params.id;
     const updatedData = req.body;
 
-    // Find and update the quiz
     const updatedQuiz = await Quiz.findByIdAndUpdate(quizId, updatedData, {
       new: true,
     });
@@ -154,16 +144,13 @@ router.get("/share/:id", authMiddleware, async (req, res) => {
       return res.status(404).json({ message: "Quiz not found" });
     }
 
-    // Check if the logged-in user is the creator
     if (quiz.creator.toString() !== req.user.id) {
       return res
         .status(403)
         .json({ message: "Not authorized to share this quiz" });
     }
 
-    const shareableLink = `${req.protocol}://${req.get("host")}/quiz/${
-      quiz._id
-    }`;
+    const shareableLink = `${frontendUrl}/quiz/${quiz._id}`;
     res.status(200).json({ link: shareableLink });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
@@ -180,7 +167,6 @@ router.delete("/:id", authMiddleware, async (req, res) => {
       return res.status(404).json({ message: "Quiz not found" });
     }
 
-    // Check if the logged-in user is the creator of the quiz
     if (quiz.creator.toString() !== req.user.id) {
       return res
         .status(403)
@@ -215,7 +201,6 @@ router.post("/response/:quizId", async (req, res) => {
 
     const savedResponse = await response.save();
 
-    // Increment impressions only when a response is submitted
     const quiz = await Quiz.findById(quizId);
     if (quiz) {
       quiz.impressions += 1;
@@ -251,7 +236,6 @@ router.get("/analysis/:quizId", authMiddleware, async (req, res) => {
         options: [],
       };
 
-      // Fetch all responses for this question
       let responses = await Response.find({
         quiz: quizId,
         "answers.question": question._id,
@@ -260,7 +244,6 @@ router.get("/analysis/:quizId", authMiddleware, async (req, res) => {
       analysis.attempted = responses.length;
 
       if (quiz.quizCategory === "Q&A") {
-        // For Q&A type quizzes
         responses.forEach((response) => {
           const answer = response.answers.find(
             (a) => a.question.toString() === question._id.toString()
@@ -274,7 +257,6 @@ router.get("/analysis/:quizId", authMiddleware, async (req, res) => {
           }
         });
       } else if (quiz.quizCategory === "Poll") {
-        // For Poll type quizzes
         question.options.forEach((option, index) => {
           let count = responses.filter((response) => {
             const answer = response.answers.find(
