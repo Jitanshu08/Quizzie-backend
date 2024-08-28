@@ -1,7 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const Quiz = require("../models/quiz");
-const Response = require("../models/response"); // Import the Response model
+const Response = require("../models/response");
 const authMiddleware = require("../middleware/auth");
 const router = express.Router();
 
@@ -110,7 +110,8 @@ router.get("/my-quizzes", authMiddleware, async (req, res) => {
   }
 });
 
-// Route to get a single quiz by ID
+// Route to get a single quiz by ID (For Taking Quiz)
+// This route should only increment impressions when the quiz is accessed for taking
 router.get("/:id", async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.id);
@@ -118,17 +119,13 @@ router.get("/:id", async (req, res) => {
       return res.status(404).json({ message: "Quiz not found" });
     }
 
-    // Increment impressions count
-    quiz.impressions += 1;
-    await quiz.save();
-
     res.status(200).json(quiz);
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
 
-// routes/quiz.js
+// Route to update an existing quiz
 router.put("/:id", authMiddleware, async (req, res) => {
   try {
     const quizId = req.params.id;
@@ -200,7 +197,6 @@ router.delete("/:id", authMiddleware, async (req, res) => {
 });
 
 // Route to save a user's response to a quiz
-// Route to submit a response for a quiz
 router.post("/response/:quizId", async (req, res) => {
   try {
     const { quizId } = req.params;
@@ -220,6 +216,14 @@ router.post("/response/:quizId", async (req, res) => {
     }
 
     const savedResponse = await response.save();
+
+    // Increment impressions only when a response is submitted
+    const quiz = await Quiz.findById(quizId);
+    if (quiz) {
+      quiz.impressions += 1;
+      await quiz.save();
+    }
+
     res.status(201).json(savedResponse);
   } catch (err) {
     console.error("Error submitting response:", err);
@@ -227,7 +231,7 @@ router.post("/response/:quizId", async (req, res) => {
   }
 });
 
-// Route to get question-wise analysis for a quiz
+// Route to get question-wise analysis for a quiz (DO NOT Increment Impressions)
 router.get("/analysis/:quizId", authMiddleware, async (req, res) => {
   try {
     const { quizId } = req.params;
