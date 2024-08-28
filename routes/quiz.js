@@ -209,8 +209,7 @@ router.post("/response/:quizId", async (req, res) => {
         selectedOption: answer.selectedOption,
       })),
     });
-
-    // If the user is authenticated, add the user ID to the response
+ 
     if (req.user && req.user.id) {
       response.user = req.user.id;
     }
