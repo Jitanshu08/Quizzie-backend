@@ -111,7 +111,6 @@ router.get("/my-quizzes", authMiddleware, async (req, res) => {
 });
 
 // Route to get a single quiz by ID (For Taking Quiz)
-// This route should only increment impressions when the quiz is accessed for taking
 router.get("/:id", async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.id);
@@ -209,7 +208,7 @@ router.post("/response/:quizId", async (req, res) => {
         selectedOption: answer.selectedOption,
       })),
     });
- 
+
     if (req.user && req.user.id) {
       response.user = req.user.id;
     }
@@ -249,7 +248,7 @@ router.get("/analysis/:quizId", authMiddleware, async (req, res) => {
         attempted: 0,
         correct: 0,
         incorrect: 0,
-        options: [], // For poll type quizzes
+        options: [],
       };
 
       // Fetch all responses for this question
