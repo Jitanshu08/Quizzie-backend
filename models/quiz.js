@@ -1,6 +1,22 @@
 const mongoose = require("mongoose");
 
-// Defining the schema for a question
+// Schema for an option
+const optionSchema = new mongoose.Schema({
+  text: {
+    type: String,
+    required: function () {
+      return this.optionType === "Text" || this.optionType === "Text & Image URL";
+    },
+  },
+  imageUrl: {
+    type: String,
+    required: function () {
+      return this.optionType === "Image URL" || this.optionType === "Text & Image URL";
+    },
+  },
+});
+
+// Schema for a question
 const questionSchema = new mongoose.Schema({
   type: {
     type: String,
@@ -11,14 +27,7 @@ const questionSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  options: [
-    {
-      type: String,
-      required: function () {
-        return this.type === "Poll";
-      }, // Options are required only for Poll type
-    },
-  ],
+  options: [optionSchema], // Update to use optionSchema
   correctOption: {
     type: Number,
     required: function () {
@@ -26,7 +35,7 @@ const questionSchema = new mongoose.Schema({
     },
   },
   optionType: {
-    type: String, 
+    type: String,
     enum: ["Text", "Image URL", "Text & Image URL"],
     required: true,
   },
@@ -35,7 +44,7 @@ const questionSchema = new mongoose.Schema({
   },
 });
 
-// Defining the schema for a quiz
+// Schema for a quiz
 const quizSchema = new mongoose.Schema({
   title: {
     type: String,
