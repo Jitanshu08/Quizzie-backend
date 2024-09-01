@@ -25,6 +25,11 @@ const questionSchema = new mongoose.Schema({
       return this.type === "Q&A";
     },
   },
+  optionType: {
+    type: String, 
+    enum: ["Text", "Image URL", "Text & Image URL"],
+    required: true,
+  },
   timer: {
     type: Number,
   },
